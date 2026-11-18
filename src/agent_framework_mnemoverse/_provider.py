@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, Any
 
 from agent_framework import AgentSession, ContextProvider, SessionContext
@@ -22,8 +21,9 @@ from ._common import (
 )
 
 if TYPE_CHECKING:
+    from typing import Self
+
     from agent_framework import SupportsAgentRun
-    from typing_extensions import Self
 
 DEFAULT_RECALL_TIMEOUT = 8.0
 DEFAULT_TOP_K = 8
@@ -176,7 +176,7 @@ class MnemoverseContextProvider(ContextProvider):
                 self.recall_timeout,
                 "recall",
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "Mnemoverse: recall took longer than %.1fs; running without memory this turn.",
                 self.recall_timeout,
@@ -231,7 +231,7 @@ class MnemoverseContextProvider(ContextProvider):
                 self.recall_timeout,
                 "capture",
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 "Mnemoverse: capture is still running after %.1fs; it continues in the background.",
                 self.recall_timeout,

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
-from agent_framework import FunctionInvocationContext, FunctionTool, tool
+from agent_framework import AgentSession, FunctionInvocationContext, FunctionTool, tool
 from mnemoverse import AsyncMnemoClient
 from pydantic import Field
 
@@ -47,7 +48,7 @@ def mnemoverse_tools(
     """
     scope = Scope(client, api_key=api_key, domain=domain, source_id=source_id)
 
-    def _session(ctx: FunctionInvocationContext | None):
+    def _session(ctx: FunctionInvocationContext | None) -> AgentSession | None:
         return ctx.session if ctx is not None else None
 
     @tool(
@@ -62,7 +63,9 @@ def mnemoverse_tools(
     ) -> str:
         session = _session(ctx)
         try:
-            result = await scope.client.read(query[-MAX_QUERY:], top_k=limit, domain=scope.domain_for(session))
+            result = await scope.client.read(
+                query[-MAX_QUERY:], top_k=limit, domain=scope.domain_for(session)
+            )
         except NoDomain as exc:
             return f"Mnemoverse is not available: {exc}."
         except Exception as exc:  # noqa: BLE001 - the tool answers the model with the error
@@ -116,7 +119,7 @@ def mnemoverse_tools(
         """Rate recalled memories as helpful or misleading. The rating changes what Mnemoverse
         recalls next for similar questions."""
         session = _session(ctx)
-        ids = list(memory_ids or last_ids(session, source_id))
+        ids: list[UUID | str] = list(memory_ids or last_ids(session, source_id))
         if not ids:
             return "No memories to rate: search first, or pass memory_ids."
         try:

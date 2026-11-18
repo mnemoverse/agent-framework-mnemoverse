@@ -12,7 +12,9 @@ from agent_framework_mnemoverse import MnemoverseContextProvider, bind_user, mne
 async def _run(mem, script, *, tools=None, prompt="go", **agent_kwargs):
     chat = ScriptedChatClient([*script, say("done")])
     agent = Agent(
-        client=chat, tools=tools if tools is not None else mnemoverse_tools(mem, domain="user:ana"), **agent_kwargs
+        client=chat,
+        tools=tools if tools is not None else mnemoverse_tools(mem, domain="user:ana"),
+        **agent_kwargs,
     )
     await agent.run(prompt)
     return chat, tool_results(chat)
@@ -80,9 +82,7 @@ async def test_rate_uses_the_last_search_by_default(mem):
 
 
 async def test_rate_named_ids_as_misleading(mem):
-    _, (out,) = await _run(
-        mem, [call("mnemoverse_rate", {"helpful": False, "memory_ids": [str(WINDOW_ID)]})]
-    )
+    _, (out,) = await _run(mem, [call("mnemoverse_rate", {"helpful": False, "memory_ids": [str(WINDOW_ID)]})])
     (fb,) = mem.named("feedback")
     assert fb == {"atom_ids": [str(WINDOW_ID)], "outcome": -1.0, "domain": "user:ana"}
     assert out == "Rated 1 of 1 memories as misleading."

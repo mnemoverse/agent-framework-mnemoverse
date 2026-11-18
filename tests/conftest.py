@@ -78,7 +78,9 @@ class FakeMnemo:
         await self._enter("write", content=content, **kwargs)
         if not self.stored:
             return WriteResponse(stored=False, reason="duplicate of an existing memory")
-        return WriteResponse(stored=True, atom_id=uuid.UUID("33333333-3333-4333-8333-333333333333"), importance=0.5)
+        return WriteResponse(
+            stored=True, atom_id=uuid.UUID("33333333-3333-4333-8333-333333333333"), importance=0.5
+        )
 
     async def feedback(self, atom_ids: list[Any], outcome: float, **kwargs: Any) -> FeedbackResponse:
         await self._enter("feedback", atom_ids=list(atom_ids), outcome=outcome, **kwargs)

@@ -41,7 +41,10 @@ async def test_recall_adds_memories_to_the_instructions(mem):
 async def test_recall_reads_the_latest_of_several_user_messages(mem):
     agent = Agent(client=ScriptedChatClient(), context_providers=[MnemoverseContextProvider(mem, domain="d")])
     await agent.run(
-        [Message(role="user", contents=["first question"]), Message(role="user", contents=["second question"])]
+        [
+            Message(role="user", contents=["first question"]),
+            Message(role="user", contents=["second question"]),
+        ]
     )
     assert [c["query"] for c in mem.named("read")] == ["second question"]
 

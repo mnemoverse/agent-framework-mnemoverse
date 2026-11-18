@@ -39,10 +39,10 @@ KEYS_PAGE = "https://console.mnemoverse.com/dashboard/keys"
 def _check_domain(domain: Any) -> str:
     if not isinstance(domain, str) or not domain.strip():
         raise ValueError("domain must be a non-empty string")
-    domain = domain.strip()
-    if len(domain) > MAX_DOMAIN:
+    name: str = domain.strip()
+    if len(name) > MAX_DOMAIN:
         raise ValueError(f"domain must be at most {MAX_DOMAIN} characters")
-    return domain
+    return name
 
 
 def bind_domain(session: Any, domain: str, *, source_id: str = DEFAULT_SOURCE_ID) -> None:
@@ -151,7 +151,7 @@ async def within(call: Awaitable[T], timeout: float, what: str) -> T:
     task = asyncio.ensure_future(call)
     try:
         return await asyncio.wait_for(asyncio.shield(task), timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         task.add_done_callback(functools.partial(_log_late_failure, what))
         raise
 
@@ -161,7 +161,9 @@ def _log_late_failure(what: str, task: asyncio.Future[Any]) -> None:
         return
     exc = task.exception()
     if exc is not None:
-        logger.warning("Mnemoverse: the %s that ran past its budget later failed: %s", what, describe_error(exc))
+        logger.warning(
+            "Mnemoverse: the %s that ran past its budget later failed: %s", what, describe_error(exc)
+        )
 
 
 def _server_says(exc: MnemoError) -> str:

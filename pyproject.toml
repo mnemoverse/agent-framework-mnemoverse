@@ -24,18 +24,19 @@ classifiers = [
 ]
 dependencies = [
     "agent-framework-core>=1.25.0,<2",
-    "mnemoverse>=0.5.0,<1",
+    "mnemoverse>=0.5.2,<0.6.0",
     "pydantic>=2,<3",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24"]
+dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.8", "mypy>=1.13"]
 
 [project.urls]
 Homepage = "https://mnemoverse.com"
 Documentation = "https://mnemoverse.com/docs/api/python-sdk"
-Repository = "https://github.com/mnemoverse/mnemoverse-sdk-python"
-Issues = "https://github.com/mnemoverse/mnemoverse-sdk-python/issues"
+Repository = "https://github.com/mnemoverse/agent-framework-mnemoverse"
+Issues = "https://github.com/mnemoverse/agent-framework-mnemoverse/issues"
+Changelog = "https://github.com/mnemoverse/agent-framework-mnemoverse/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/agent_framework_mnemoverse/_version.py"
@@ -54,3 +55,11 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 110
 target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "BLE", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
