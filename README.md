@@ -71,11 +71,16 @@ A domain separates how memory is used, not who may read it: the API key can read
 
 Memory never breaks a run. A timeout or a failed call is logged under the `agent_framework_mnemoverse` logger and the run continues without memory. A refusal (401 or 403) is logged with the server's reason, and the provider stops recall, or capture, for that domain only. Tool calls return the error to the model as a short message with the server's reason, so the agent can tell the user what happened. Long input is kept within the API limits: recall reads the last 5,000 characters of the message, capture saves the first 10,000, and the save tool refuses a memory over 10,000 characters.
 
+## Compatibility
+
+Tested with the `mnemoverse` Python SDK 0.5.2 and `agent-framework-core` 1.26.0 on Python 3.11, 3.12 and 3.13, and with the lowest supported `agent-framework-core`, 1.25.0, on Python 3.12. It needs SDK 0.5.2 or later: in earlier versions a call refused with a client error (such as 401, 403 or a quota 429) while the client was probing the service after an outage could leave that client refusing every call until the process restarted.
+
 ## Links
 
 - Python SDK: [mnemoverse on PyPI](https://pypi.org/project/mnemoverse/), [docs](https://mnemoverse.com/docs/api/python-sdk)
 - Pricing and limits: [mnemoverse.com/pricing](https://mnemoverse.com/pricing)
-- Issues: [github.com/mnemoverse/mnemoverse-sdk-python/issues](https://github.com/mnemoverse/mnemoverse-sdk-python/issues/new)
+- Security and data handling: [mnemoverse.com/docs/api/security](https://mnemoverse.com/docs/api/security)
+- Issues: [github.com/mnemoverse/agent-framework-mnemoverse/issues](https://github.com/mnemoverse/agent-framework-mnemoverse/issues/new)
 
 ## License
 
