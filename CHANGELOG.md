@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.1.0] (unreleased)
+## [0.1.0] - 2026-11-21
 
 - `MnemoverseContextProvider`: recall from a Mnemoverse domain before each run, within a time budget, into the run's instructions; optional capture of the user's messages after each turn.
 - `mnemoverse_tools()`: `mnemoverse_search`, `mnemoverse_save` and `mnemoverse_rate` function tools.
