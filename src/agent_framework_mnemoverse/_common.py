@@ -103,6 +103,10 @@ class NoDomain(Exception):
     """The provider has no fixed domain and the session names none."""
 
 
+class DomainConflict(NoDomain):
+    """The component has a fixed domain and the session is bound to a different one."""
+
+
 class Scope:
     """One client for every call, and the domain each session reads and writes."""
 
@@ -124,10 +128,21 @@ class Scope:
         self.client: AsyncMnemoClient = client if client is not None else AsyncMnemoClient(api_key=api_key)
 
     def domain_for(self, session: Any) -> str:
-        """The fixed domain, or the one bound to this session. Never another session's."""
-        if self.domain is not None:
-            return self.domain
+        """The fixed domain, or the one bound to this session. Never another session's.
+
+        When both are there and they differ, :class:`DomainConflict`: the provider and the tools
+        each have their own ``domain=``, and picking either could read one user's memory and
+        write another's.
+        """
         bound = domain_of(session, self.source_id)
+        if self.domain is not None:
+            if bound is not None and bound != self.domain:
+                raise DomainConflict(
+                    "this session is bound to a different Mnemoverse domain than the domain= this "
+                    "component was given; pass domain= only in a single-user app, or leave it out "
+                    "and bind each session with bind_user(session, user_id)"
+                )
+            return self.domain
         if bound is None:
             raise NoDomain(
                 "no Mnemoverse domain is bound to this session; pass domain= to the provider "

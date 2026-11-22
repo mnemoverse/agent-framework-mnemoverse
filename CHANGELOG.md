@@ -7,3 +7,4 @@
 - `bind_user()` and `bind_domain()`: the domain a session reads and writes, kept in `session.state`.
 - Requires `mnemoverse>=0.5.2,<0.6.0`.
 - Recalled memory is shown to the model one line per memory, with `<` and `>` replaced by `‹` and `›`, so its text cannot close the memory block or pose as another memory.
+- A session bound to a domain other than a fixed `domain=` reads and writes nothing: the provider runs without memory or capture and logs an error, and every tool answers the model with an error. One run never reads one user's memory and writes another's.

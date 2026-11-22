@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from agent_framework import Agent
 from conftest import (
     AUTH,
@@ -194,3 +196,48 @@ async def test_provider_and_tools_together(mem):
     assert result.text == "Saved."
     assert f"[{LEDGER_ID}]" in instructions(chat)
     assert mem.named("write")[0]["content"] == "Ship on Fridays"
+
+
+async def test_a_session_bound_to_another_domain_than_the_fixed_one_touches_neither(mem, caplog):
+    # The provider has a fixed domain, the tools follow the session, the session names another
+    # user: one run must not read one user's memory and write another's.
+    chat = ScriptedChatClient([call("mnemoverse_save", {"content": "Bob's fact"}), say("ok")])
+    agent = Agent(
+        client=chat,
+        context_providers=[MnemoverseContextProvider(mem, domain="user:ana", capture=True)],
+        tools=mnemoverse_tools(mem),
+    )
+    session = agent.create_session()
+    bind_user(session, "bob")
+    with caplog.at_level(logging.ERROR, logger="agent_framework_mnemoverse"):
+        await agent.run("what do you know about me?", session=session)
+    assert "Ana takes the window seat." not in instructions(chat)
+    assert [(n, kw["domain"]) for n, kw in mem.calls] == [("write", "user:bob")]  # the tool's save
+    assert "bound to a different Mnemoverse domain" in caplog.text
+    assert "user:ana" not in caplog.text and "user:bob" not in caplog.text
+
+    # Tools with a fixed domain refuse such a session too, and name neither domain to the model.
+    mem.calls.clear()
+    chat = ScriptedChatClient([call("mnemoverse_search", {"query": "q"}), say("done")])
+    agent = Agent(client=chat, tools=mnemoverse_tools(mem, domain="user:ana"))
+    session = agent.create_session()
+    bind_user(session, "bob")
+    await agent.run("go", session=session)
+    (out,) = tool_results(chat)
+    assert out.startswith("Mnemoverse is not available: this session is bound to a different")
+    assert "user:ana" not in out and "user:bob" not in out
+    assert mem.calls == []
+
+
+async def test_a_binding_that_matches_the_fixed_domain_is_fine(mem):
+    chat = ScriptedChatClient([call("mnemoverse_search", {"query": "q"}), say("done")])
+    agent = Agent(
+        client=chat,
+        context_providers=[MnemoverseContextProvider(mem, domain="user:ana")],
+        tools=mnemoverse_tools(mem, domain="user:ana"),
+    )
+    session = agent.create_session()
+    bind_user(session, "ana")
+    await agent.run("go", session=session)
+    assert [kw["domain"] for _, kw in mem.calls] == ["user:ana", "user:ana"]
+    assert f"[{LEDGER_ID}]" in instructions(chat)
