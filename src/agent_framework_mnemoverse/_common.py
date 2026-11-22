@@ -103,6 +103,10 @@ class NoDomain(Exception):
     """The provider has no fixed domain and the session names none."""
 
 
+class DomainConflict(NoDomain):
+    """The component has a fixed domain and the session is bound to a different one."""
+
+
 class Scope:
     """One client for every call, and the domain each session reads and writes."""
 
@@ -124,10 +128,21 @@ class Scope:
         self.client: AsyncMnemoClient = client if client is not None else AsyncMnemoClient(api_key=api_key)
 
     def domain_for(self, session: Any) -> str:
-        """The fixed domain, or the one bound to this session. Never another session's."""
-        if self.domain is not None:
-            return self.domain
+        """The fixed domain, or the one bound to this session. Never another session's.
+
+        When both are there and they differ, :class:`DomainConflict`: the provider and the tools
+        each have their own ``domain=``, and picking either could read one user's memory and
+        write another's.
+        """
         bound = domain_of(session, self.source_id)
+        if self.domain is not None:
+            if bound is not None and bound != self.domain:
+                raise DomainConflict(
+                    "this session is bound to a different Mnemoverse domain than the domain= this "
+                    "component was given; pass domain= only in a single-user app, or leave it out "
+                    "and bind each session with bind_user(session, user_id)"
+                )
+            return self.domain
         if bound is None:
             raise NoDomain(
                 "no Mnemoverse domain is bound to this session; pass domain= to the provider "
@@ -146,7 +161,8 @@ async def within(call: Awaitable[T], timeout: float, what: str) -> T:
 
     The call runs on to the SDK's own timeout and reports its outcome to the client's circuit
     breaker; cancelling it instead could leave the breaker stuck half-open, after which every
-    call on that client fails. A late failure is logged.
+    call on that client fails. It goes on only while its event loop runs: ``asyncio.run()``
+    cancels it when it returns. A late failure or cancellation is logged.
     """
     task = asyncio.ensure_future(call)
     try:
@@ -157,7 +173,13 @@ async def within(call: Awaitable[T], timeout: float, what: str) -> T:
 
 
 def _log_late_failure(what: str, task: asyncio.Future[Any]) -> None:
+    """Done-callback for a call that ran past its budget: log it if it failed or was cancelled."""
     if task.cancelled():
+        logger.warning(
+            "Mnemoverse: the %s that ran past its budget was cancelled before it finished, "
+            "usually because its event loop closed (asyncio.run returned); it did not complete.",
+            what,
+        )
         return
     exc = task.exception()
     if exc is not None:
@@ -190,12 +212,31 @@ def describe_error(exc: BaseException) -> str:
     return f"Mnemoverse call failed: {exc!r}"
 
 
+# "<" and ">" become the single guillemets U+2039 and U+203A.
+_ANGLE_BRACKETS = str.maketrans({"<": chr(0x2039), ">": chr(0x203A)})
+
+
+def one_line(text: str) -> str:
+    """Memory text as it is shown to a model: one line, angle brackets replaced by single
+    guillemets (U+2039, U+203A).
+
+    Memory text is written by other people and other tools (shared rooms, every AI tool on the
+    account, capture). Kept on one line, it cannot start a line of its own that looks like
+    another memory (``- [<id>] ...``) or a heading; without ``<`` and ``>`` it cannot close
+    the ``<mnemoverse_memory>`` block it is shown in, in any spelling.
+    """
+    return " ".join(text.split()).translate(_ANGLE_BRACKETS)
+
+
 def format_items(items: list[Any]) -> tuple[list[str], list[str]]:
-    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it."""
+    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it.
+
+    Each memory's text goes through :func:`one_line`, so the ids on these lines are exactly the
+    ids the server returned, one per line."""
     lines: list[str] = []
     ids: list[str] = []
     for item in items:
-        content = (getattr(item, "content", "") or "").strip()
+        content = one_line(getattr(item, "content", "") or "")
         if not content:
             continue
         atom_id = str(getattr(item, "atom_id", "") or "")

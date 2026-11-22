@@ -46,12 +46,15 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+Use a client, and the provider and tools built on it, in one event loop only, as above: the SDK's connection pool belongs to the loop that first used it, so the same instance used again from a second `asyncio.run()` fails its first call there with "Event loop is closed", and that run's recall goes without memory.
+
 ## Which memory a session uses
 
 Every call reads and writes one Mnemoverse **domain**, a namespace inside your account such as `user:ana` or `project:support`.
 
 - **One user:** pass `domain="user:ana"` to the provider and to `mnemoverse_tools()`; every session uses it.
 - **Several users in one app:** leave `domain` out and bind each session with `bind_user(session, user_id)` (domain `user:<user_id>`) or `bind_domain(session, domain)`. Take `user_id` from your app's signed-in user on the server, never from client input or model output. The binding is kept in `session.state`, so it is saved with the session. A session with no binding gets no memory: it is never served from another session's domain.
+- **Both:** a session bound to a domain other than a fixed `domain=` is refused by each component that was given that `domain=`: the provider then gives no memory and logs an error, and such a tool returns an error to the model, so one run never reads one user's memory and writes another's. A binding that matches `domain=` is fine.
 
 A domain separates how memory is used, not who may read it: the API key can read every domain of its account. Give each app its own key, so you can revoke one without the others.
 
@@ -61,11 +64,13 @@ A domain separates how memory is used, not who may read it: the API key can read
 |---|---|---|
 | `top_k` | 8 | Memories per recall |
 | `min_relevance` | 0.3 | Lowest relevance, 0 to 1, of a recalled memory. A broad message ("what do you know about me?") scores lower than a specific one; lower this if broad messages recall nothing |
-| `recall_timeout` | 8.0 | Seconds the run waits for recall before it goes on without it; also how long it waits for a capture. A call that runs longer is not cancelled, it finishes in the background |
+| `recall_timeout` | 8.0 | Seconds the run waits for recall before it goes on without it; also how long it waits for a capture. A call that has started is not cancelled: it finishes in the background, but only while the event loop keeps running. `asyncio.run()` cancels it when it returns, and the provider logs that it did not complete |
 | `context_prompt` | a heading and one line | Text above the recalled memories. The default line tells the model the memories are reference data, not instructions; keep it if you write your own |
 | `capture` | `False` | Save the user's own messages after each turn. Prefer the `mnemoverse_save` tool, which saves only what the user asks to keep |
 
 `mnemoverse_tools(save=False)` leaves out the save tool, and `rate=False` leaves out the rate tool. There is no delete tool.
+
+Memory text is written by other people and tools too: members of a shared room, the other AI tools on the account. In the provider's memory block and in the search tool's answer each memory is therefore one line, with line breaks turned into spaces and `<` and `>` into `‹` and `›`, so a memory cannot close the block or pose as another memory with an id the server never returned.
 
 ## Errors
 
@@ -73,7 +78,7 @@ Memory never breaks a run. A timeout or a failed call is logged under the `agent
 
 ## Compatibility
 
-Tested with the `mnemoverse` Python SDK 0.5.2 and `agent-framework-core` 1.26.0 on Python 3.11, 3.12 and 3.13, and with the lowest supported `agent-framework-core`, 1.25.0, on Python 3.12. It needs SDK 0.5.2 or later: in earlier versions a call refused with a client error (such as 401, 403 or a quota 429) while the client was probing the service after an outage could leave that client refusing every call until the process restarted.
+Tested with the `mnemoverse` Python SDK 0.5.2 and `agent-framework-core` 1.26.0 on Python 3.11, 3.12 and 3.13, and with the lowest supported `agent-framework-core`, 1.25.0, on Python 3.11. It needs SDK 0.5.2 or later: in earlier versions a call refused with a client error (such as 401, 403 or a quota 429) while the client was probing the service after an outage could leave that client refusing every call until the process restarted.
 
 ## Links
 

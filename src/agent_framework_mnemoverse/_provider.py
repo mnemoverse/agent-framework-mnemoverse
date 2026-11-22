@@ -11,6 +11,7 @@ from ._common import (
     DEFAULT_SOURCE_ID,
     MAX_CONTENT,
     MAX_QUERY,
+    DomainConflict,
     NoDomain,
     Scope,
     describe_error,
@@ -56,8 +57,9 @@ class MnemoverseContextProvider(ContextProvider):
 
     ``before_run`` reads the memories relevant to the user's latest message, waiting at most
     ``recall_timeout`` seconds. On a timeout or any error the run continues without memory and
-    the reason is logged; a call that outlives the budget is not cancelled, it finishes in the
-    background. What recall finds goes into the run's instructions, one line per memory with
+    the reason is logged. A call that outlives the budget is not cancelled: it finishes in the
+    background, but only while its event loop keeps running (``asyncio.run()`` cancels it on
+    return, which is logged). What recall finds goes into the run's instructions, one line per memory with
     its id, so the ``mnemoverse_rate`` tool from :func:`mnemoverse_tools` can rate it.
 
     ``after_run`` saves nothing unless ``capture=True``. With capture on, the user's own messages
@@ -66,7 +68,9 @@ class MnemoverseContextProvider(ContextProvider):
 
     Every session reads and writes one domain: ``domain`` when it is given (a single-user app),
     otherwise the domain bound to the session with :func:`bind_user` or :func:`bind_domain`. A
-    session with neither gets no memory; it is never served from another session's domain.
+    session with neither gets no memory; it is never served from another session's domain. A
+    session bound to a domain other than ``domain`` gets no memory either, and an error is
+    logged: the two disagree, and the tools refuse such a session the same way.
 
     A refusal (401 or 403) stops recall, or capture, for that domain only: a room the key may
     not use does not switch memory off for the other sessions.
@@ -136,6 +140,9 @@ class MnemoverseContextProvider(ContextProvider):
     def _domain(self, session: AgentSession) -> str | None:
         try:
             return self._scope.domain_for(session)
+        except DomainConflict as exc:  # the tools refuse such a session too
+            logger.error("Mnemoverse: %s; running without memory.", exc)
+            return None
         except NoDomain as exc:
             if not self._warned_unbound:
                 self._warned_unbound = True
@@ -233,7 +240,8 @@ class MnemoverseContextProvider(ContextProvider):
             )
         except TimeoutError:
             logger.warning(
-                "Mnemoverse: capture is still running after %.1fs; it continues in the background.",
+                "Mnemoverse: capture is still running after %.1fs; it continues in the background "
+                "while its event loop runs.",
                 self.recall_timeout,
             )
         except MnemoAuthError as exc:

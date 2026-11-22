@@ -41,7 +41,8 @@ def mnemoverse_tools(
     yourself when the app stops; with ``api_key=`` (or ``MNEMOVERSE_API_KEY``) the tools open a
     connection pool of their own that stays open until the process ends. Each session uses a
     fixed ``domain`` or the domain bound to it with :func:`bind_user` or :func:`bind_domain`
-    (the same binding the provider reads).
+    (the same binding the provider reads). A session bound to a domain other than the fixed
+    ``domain`` gets an error from every tool, and nothing is read or written.
 
     ``save=False`` leaves out ``mnemoverse_save``; ``rate=False`` leaves out ``mnemoverse_rate``.
     There is no delete tool.
