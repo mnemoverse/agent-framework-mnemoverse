@@ -190,12 +190,31 @@ def describe_error(exc: BaseException) -> str:
     return f"Mnemoverse call failed: {exc!r}"
 
 
+# "<" and ">" become the single guillemets U+2039 and U+203A.
+_ANGLE_BRACKETS = str.maketrans({"<": chr(0x2039), ">": chr(0x203A)})
+
+
+def one_line(text: str) -> str:
+    """Memory text as it is shown to a model: one line, angle brackets replaced by single
+    guillemets (U+2039, U+203A).
+
+    Memory text is written by other people and other tools (shared rooms, every AI tool on the
+    account, capture). Kept on one line, it cannot start a line of its own that looks like
+    another memory (``- [<id>] ...``) or a heading; without ``<`` and ``>`` it cannot close
+    the ``<mnemoverse_memory>`` block it is shown in, in any spelling.
+    """
+    return " ".join(text.split()).translate(_ANGLE_BRACKETS)
+
+
 def format_items(items: list[Any]) -> tuple[list[str], list[str]]:
-    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it."""
+    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it.
+
+    Each memory's text goes through :func:`one_line`, so the ids on these lines are exactly the
+    ids the server returned, one per line."""
     lines: list[str] = []
     ids: list[str] = []
     for item in items:
-        content = (getattr(item, "content", "") or "").strip()
+        content = one_line(getattr(item, "content", "") or "")
         if not content:
             continue
         atom_id = str(getattr(item, "atom_id", "") or "")

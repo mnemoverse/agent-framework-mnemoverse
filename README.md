@@ -67,6 +67,8 @@ A domain separates how memory is used, not who may read it: the API key can read
 
 `mnemoverse_tools(save=False)` leaves out the save tool, and `rate=False` leaves out the rate tool. There is no delete tool.
 
+Memory text is written by other people and tools too: members of a shared room, the other AI tools on the account. In the provider's memory block and in the search tool's answer each memory is therefore one line, with line breaks turned into spaces and `<` and `>` into `‹` and `›`, so a memory cannot close the block or pose as another memory with an id the server never returned.
+
 ## Errors
 
 Memory never breaks a run. A timeout or a failed call is logged under the `agent_framework_mnemoverse` logger and the run continues without memory. A refusal (401 or 403) is logged with the server's reason, and the provider stops recall, or capture, for that domain only. Tool calls return the error to the model as a short message with the server's reason, so the agent can tell the user what happened. Long input is kept within the API limits: recall reads the last 5,000 characters of the message, capture saves the first 10,000, and the save tool refuses a memory over 10,000 characters.

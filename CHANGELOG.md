@@ -6,3 +6,4 @@
 - `mnemoverse_tools()`: `mnemoverse_search`, `mnemoverse_save` and `mnemoverse_rate` function tools.
 - `bind_user()` and `bind_domain()`: the domain a session reads and writes, kept in `session.state`.
 - Requires `mnemoverse>=0.5.2,<0.6.0`.
+- Recalled memory is shown to the model one line per memory, with `<` and `>` replaced by `‹` and `›`, so its text cannot close the memory block or pose as another memory.
