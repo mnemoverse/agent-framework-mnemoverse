@@ -76,7 +76,7 @@ Memory never breaks a run. A timeout or a failed call is logged under the `agent
 
 ## Compatibility
 
-Tested with the `mnemoverse` Python SDK 0.5.2 and `agent-framework-core` 1.26.0 on Python 3.11, 3.12 and 3.13, and with the lowest supported `agent-framework-core`, 1.25.0, on Python 3.12. It needs SDK 0.5.2 or later: in earlier versions a call refused with a client error (such as 401, 403 or a quota 429) while the client was probing the service after an outage could leave that client refusing every call until the process restarted.
+Tested with the `mnemoverse` Python SDK 0.5.2 and `agent-framework-core` 1.26.0 on Python 3.11, 3.12 and 3.13, and with the lowest supported `agent-framework-core`, 1.25.0, on Python 3.11. It needs SDK 0.5.2 or later: in earlier versions a call refused with a client error (such as 401, 403 or a quota 429) while the client was probing the service after an outage could leave that client refusing every call until the process restarted.
 
 ## Links
 
