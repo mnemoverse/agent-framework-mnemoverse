@@ -54,7 +54,7 @@ Every call reads and writes one Mnemoverse **domain**, a namespace inside your a
 
 - **One user:** pass `domain="user:ana"` to the provider and to `mnemoverse_tools()`; every session uses it.
 - **Several users in one app:** leave `domain` out and bind each session with `bind_user(session, user_id)` (domain `user:<user_id>`) or `bind_domain(session, domain)`. Take `user_id` from your app's signed-in user on the server, never from client input or model output. The binding is kept in `session.state`, so it is saved with the session. A session with no binding gets no memory: it is never served from another session's domain.
-- **Both:** a session bound to a domain other than a fixed `domain=` gets no memory from the provider, which logs an error, and an error from every tool, so one run never reads one user's memory and writes another's. A binding that matches `domain=` is fine.
+- **Both:** a session bound to a domain other than a fixed `domain=` is refused by each component that was given that `domain=`: the provider then gives no memory and logs an error, and such a tool returns an error to the model, so one run never reads one user's memory and writes another's. A binding that matches `domain=` is fine.
 
 A domain separates how memory is used, not who may read it: the API key can read every domain of its account. Give each app its own key, so you can revoke one without the others.
 
