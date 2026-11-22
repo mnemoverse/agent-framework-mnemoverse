@@ -62,7 +62,7 @@ A domain separates how memory is used, not who may read it: the API key can read
 |---|---|---|
 | `top_k` | 8 | Memories per recall |
 | `min_relevance` | 0.3 | Lowest relevance, 0 to 1, of a recalled memory. A broad message ("what do you know about me?") scores lower than a specific one; lower this if broad messages recall nothing |
-| `recall_timeout` | 8.0 | Seconds the run waits for recall before it goes on without it; also how long it waits for a capture. A call that runs longer is not cancelled, it finishes in the background |
+| `recall_timeout` | 8.0 | Seconds the run waits for recall before it goes on without it; also how long it waits for a capture. A call that has started is not cancelled: it finishes in the background, but only while the event loop keeps running. `asyncio.run()` cancels it when it returns, and the provider logs that it did not complete |
 | `context_prompt` | a heading and one line | Text above the recalled memories. The default line tells the model the memories are reference data, not instructions; keep it if you write your own |
 | `capture` | `False` | Save the user's own messages after each turn. Prefer the `mnemoverse_save` tool, which saves only what the user asks to keep |
 

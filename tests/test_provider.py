@@ -8,7 +8,17 @@ import time
 
 import pytest
 from agent_framework import Agent, Message
-from conftest import AUTH, LEDGER_ID, SERVER, WINDOW_ID, ScriptedChatClient, instructions, item, say
+from conftest import (
+    AUTH,
+    LEDGER_ID,
+    SERVER,
+    WINDOW_ID,
+    FakeMnemo,
+    ScriptedChatClient,
+    instructions,
+    item,
+    say,
+)
 from mnemoverse import MnemoAuthError
 
 from agent_framework_mnemoverse import MnemoverseContextProvider, bind_domain, bind_user, domain_of
@@ -263,3 +273,30 @@ async def test_close_leaves_a_passed_client_open(mem):
     async with MnemoverseContextProvider(mem, domain="d"):
         pass
     assert mem.closed is False
+
+
+class _SlowWrite(FakeMnemo):
+    """Recall answers at once; only the capture write is slow."""
+
+    async def write(self, content, **kwargs):
+        self.calls.append(("write", {"content": content, **kwargs}))
+        await asyncio.sleep(0.5)
+        self.completed.append("write")
+        raise AssertionError("the write should have been cancelled with its event loop")
+
+
+def test_a_capture_cancelled_by_asyncio_run_is_logged(caplog):
+    mem = _SlowWrite()
+    provider = MnemoverseContextProvider(mem, domain="d", capture=True, recall_timeout=0.1)
+
+    async def main() -> None:
+        await Agent(client=ScriptedChatClient(), context_providers=[provider]).run("I take the window seat")
+
+    with caplog.at_level(logging.WARNING, logger="agent_framework_mnemoverse"):
+        asyncio.run(main())  # the README's entry point
+    # The capture outlived its budget, and asyncio.run cancelled it on return: it never finished,
+    # and the log says so instead of only "it continues in the background".
+    assert len(mem.named("write")) == 1
+    assert mem.completed == ["read"]
+    assert "the capture that ran past its budget was cancelled before it finished" in caplog.text
+    assert "while its event loop runs" in caplog.text

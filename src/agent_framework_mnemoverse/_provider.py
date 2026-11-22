@@ -57,8 +57,9 @@ class MnemoverseContextProvider(ContextProvider):
 
     ``before_run`` reads the memories relevant to the user's latest message, waiting at most
     ``recall_timeout`` seconds. On a timeout or any error the run continues without memory and
-    the reason is logged; a call that outlives the budget is not cancelled, it finishes in the
-    background. What recall finds goes into the run's instructions, one line per memory with
+    the reason is logged. A call that outlives the budget is not cancelled: it finishes in the
+    background, but only while its event loop keeps running (``asyncio.run()`` cancels it on
+    return, which is logged). What recall finds goes into the run's instructions, one line per memory with
     its id, so the ``mnemoverse_rate`` tool from :func:`mnemoverse_tools` can rate it.
 
     ``after_run`` saves nothing unless ``capture=True``. With capture on, the user's own messages
@@ -239,7 +240,8 @@ class MnemoverseContextProvider(ContextProvider):
             )
         except TimeoutError:
             logger.warning(
-                "Mnemoverse: capture is still running after %.1fs; it continues in the background.",
+                "Mnemoverse: capture is still running after %.1fs; it continues in the background "
+                "while its event loop runs.",
                 self.recall_timeout,
             )
         except MnemoAuthError as exc:
