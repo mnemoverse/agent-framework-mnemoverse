@@ -46,6 +46,8 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
+Use a client, and the provider and tools built on it, in one event loop only, as above: the SDK's connection pool belongs to the loop that first used it, so the same instance used again from a second `asyncio.run()` fails its first call there with "Event loop is closed", and that run's recall goes without memory.
+
 ## Which memory a session uses
 
 Every call reads and writes one Mnemoverse **domain**, a namespace inside your account such as `user:ana` or `project:support`.
