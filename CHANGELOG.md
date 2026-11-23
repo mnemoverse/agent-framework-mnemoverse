@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Building the package (from the repository or the sdist) uses `hatchling==1.33.0` exactly instead of any `hatchling>=1.24`.
+- The sdist also ships `scripts/`, which `mypy` checks, so `mypy` passes in an unpacked sdist.
+
 ### Fixed
 
 - `mnemoverse_search(limit=N)` and `MnemoverseContextProvider(top_k=N)` show the model at most N memories, the first N in the server's order, even when the server returns more: `top_k` on a read is a requested count, not a hard bound.
