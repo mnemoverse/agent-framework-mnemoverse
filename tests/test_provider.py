@@ -315,3 +315,9 @@ def test_a_capture_cancelled_by_asyncio_run_is_logged(caplog):
     assert mem.completed == ["read"]
     assert "the capture that ran past its budget was cancelled before it finished" in caplog.text
     assert "while its event loop runs" in caplog.text
+
+
+@pytest.mark.parametrize("bad", [0, -1, 501, None, "3", 2.5, True])
+def test_top_k_outside_1_to_500_is_refused_when_the_provider_is_created(mem, bad):
+    with pytest.raises(ValueError, match="top_k"):
+        MnemoverseContextProvider(mem, domain="d", top_k=bad)

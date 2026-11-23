@@ -13,7 +13,7 @@ pip install agent-framework-mnemoverse
 
 Get a free API key at [console.mnemoverse.com](https://console.mnemoverse.com) and set it as `MNEMOVERSE_API_KEY`, or pass `api_key=`. With neither, building the provider or the tools raises `ValueError`.
 
-The example below uses `OpenAIChatClient`, which comes in a separate package (`pip install agent-framework-openai`). It reads `OPENAI_API_KEY` and needs a model: pass `model=` as below, or set `OPENAI_CHAT_MODEL` and leave `model=` out. Any Agent Framework chat client works the same way.
+The example below uses `OpenAIChatClient`, which comes in a separate package (`pip install agent-framework-openai`). It reads `OPENAI_API_KEY` and `OPENAI_CHAT_MODEL`, the chat model to use (any model your key can call); without a model it raises `SettingNotFoundError`, so set both or pass `model=`. Any Agent Framework chat client works the same way.
 
 ## Use
 
@@ -30,7 +30,7 @@ from agent_framework_mnemoverse import MnemoverseContextProvider, bind_user, mne
 async def main() -> None:
     client = AsyncMnemoClient()  # reads MNEMOVERSE_API_KEY
     agent = Agent(
-        client=OpenAIChatClient(model="gpt-4o-mini"),  # reads OPENAI_API_KEY
+        client=OpenAIChatClient(),  # reads OPENAI_API_KEY and OPENAI_CHAT_MODEL
         instructions="You are a helpful assistant.",
         context_providers=[MnemoverseContextProvider(client)],
         tools=mnemoverse_tools(client),

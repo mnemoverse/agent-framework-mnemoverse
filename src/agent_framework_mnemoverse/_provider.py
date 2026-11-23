@@ -101,7 +101,7 @@ class MnemoverseContextProvider(ContextProvider):
             domain: The domain every session reads and writes, for example ``user:42``. Leave
                 it out in an app with several users and bind each session instead.
             source_id: The provider id; also the ``session.state`` key of the domain binding.
-            top_k: Most memories per recall. The read asks the server for ``top_k``, which is
+            top_k: Most memories per recall, 1 to 500. The read asks the server for ``top_k``, which is
                 a requested count, not a hard bound, so the provider also stops at ``top_k``.
             min_relevance: Lowest relevance, 0 to 1, of a recalled memory. A broad message
                 ("what do you know about me?") scores lower than a specific one, so lower this
@@ -113,6 +113,8 @@ class MnemoverseContextProvider(ContextProvider):
                 you replace it.
             capture: Save the user's messages after each turn. Off by default.
         """
+        if isinstance(top_k, bool) or not isinstance(top_k, int) or not 1 <= top_k <= 500:
+            raise ValueError(f"top_k must be an int from 1 to 500, got {top_k!r}")
         super().__init__(source_id)
         self._scope = Scope(client, api_key=api_key, domain=domain, source_id=source_id)
         self.top_k = top_k
