@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- `mnemoverse_search(limit=N)` and `MnemoverseContextProvider(top_k=N)` show the model at most N memories, the first N in the server's order, even when the server returns more: `top_k` on a read is a requested count, not a hard bound.
+- The README quickstart and `examples/quickstart.py` name `OPENAI_CHAT_MODEL` next to `OPENAI_API_KEY`: `OpenAIChatClient` raises `SettingNotFoundError` without a model. A test builds both offline.
+- `MnemoverseContextProvider(top_k=...)` refuses a value that is not an int from 1 to 500 when it is created, instead of failing later inside a run.
+
 ## [0.1.0] - 2026-11-21
 
 - `MnemoverseContextProvider`: recall from a Mnemoverse domain before each run, within a time budget, into the run's instructions; optional capture of the user's messages after each turn.

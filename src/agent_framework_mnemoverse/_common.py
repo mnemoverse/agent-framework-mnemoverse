@@ -228,14 +228,19 @@ def one_line(text: str) -> str:
     return " ".join(text.split()).translate(_ANGLE_BRACKETS)
 
 
-def format_items(items: list[Any]) -> tuple[list[str], list[str]]:
-    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it.
+def format_items(items: list[Any], limit: int) -> tuple[list[str], list[str]]:
+    """``(lines, ids)``: one line per recalled memory with its id, so the rate tool can name it,
+    for at most ``limit`` memories in the server's order; empty memories are skipped.
 
-    Each memory's text goes through :func:`one_line`, so the ids on these lines are exactly the
-    ids the server returned, one per line."""
+    ``top_k`` on a read is a requested count, not a hard bound (association expansion can add
+    memories), so the cap is applied here, after the read. Each memory's text goes through
+    :func:`one_line`, so the ids on these lines are exactly the ids the server returned, one per
+    line."""
     lines: list[str] = []
     ids: list[str] = []
     for item in items:
+        if len(lines) >= limit:
+            break
         content = one_line(getattr(item, "content", "") or "")
         if not content:
             continue
