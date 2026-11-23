@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Building the package (from the repository or the sdist) uses `hatchling==1.33.0` exactly instead of any `hatchling>=1.24`.
+
 ## [0.1.0] - 2026-11-21
 
 - `MnemoverseContextProvider`: recall from a Mnemoverse domain before each run, within a time budget, into the run's instructions; optional capture of the user's messages after each turn.
