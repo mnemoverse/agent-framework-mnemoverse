@@ -45,10 +45,12 @@ jobs:
 
       - name: Pin the lowest supported versions
         if: matrix.deps == 'lowest'
-        run: pip install "agent-framework-core==1.25.0" "mnemoverse==0.5.2"
+        # agent-framework-openai is a test-only dependency; 1.18.1 is its newest release that
+        # accepts agent-framework-core 1.25.0.
+        run: pip install "agent-framework-core==1.25.0" "mnemoverse==0.5.2" "agent-framework-openai==1.18.1"
 
       - name: Installed versions
-        run: pip show agent-framework-core mnemoverse | grep -E '^(Name|Version):'
+        run: pip show agent-framework-core agent-framework-openai mnemoverse | grep -E '^(Name|Version):'
 
       - name: Lint
         run: |

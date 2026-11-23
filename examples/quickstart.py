@@ -1,8 +1,9 @@
 """An agent that remembers a user across sessions.
 
 Needs MNEMOVERSE_API_KEY (free at https://console.mnemoverse.com). The chat client here is
-OpenAIChatClient from the agent-framework-openai package, which reads OPENAI_API_KEY; any
-Agent Framework chat client works the same. From a clone of the repository:
+OpenAIChatClient from the agent-framework-openai package, which reads OPENAI_API_KEY and needs a
+model: pass model= as below, or set OPENAI_CHAT_MODEL and leave model= out. Any Agent Framework
+chat client works the same. From a clone of the repository:
 
     pip install agent-framework-mnemoverse agent-framework-openai
     python examples/quickstart.py
@@ -20,7 +21,7 @@ from agent_framework_mnemoverse import MnemoverseContextProvider, bind_user, mne
 async def main() -> None:
     client = AsyncMnemoClient()
     agent = Agent(
-        client=OpenAIChatClient(),
+        client=OpenAIChatClient(model="gpt-4o-mini"),
         instructions="You are a travel assistant. Save what the user asks you to remember.",
         context_providers=[MnemoverseContextProvider(client)],
         tools=mnemoverse_tools(client),

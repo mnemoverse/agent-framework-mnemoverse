@@ -101,7 +101,8 @@ class MnemoverseContextProvider(ContextProvider):
             domain: The domain every session reads and writes, for example ``user:42``. Leave
                 it out in an app with several users and bind each session instead.
             source_id: The provider id; also the ``session.state`` key of the domain binding.
-            top_k: Memories per recall.
+            top_k: Most memories per recall. The read asks the server for ``top_k``, which is
+                a requested count, not a hard bound, so the provider also stops at ``top_k``.
             min_relevance: Lowest relevance, 0 to 1, of a recalled memory. A broad message
                 ("what do you know about me?") scores lower than a specific one, so lower this
                 if recall comes back empty for broad messages.
@@ -196,7 +197,7 @@ class MnemoverseContextProvider(ContextProvider):
             logger.warning("Mnemoverse: recall failed, running without memory: %s", describe_error(exc))
             return
 
-        lines, ids = format_items(list(result.items))
+        lines, ids = format_items(list(result.items), self.top_k)
         if not lines:
             return
         remember_ids(session, ids, self.source_id)

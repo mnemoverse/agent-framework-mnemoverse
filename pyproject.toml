@@ -29,7 +29,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-asyncio>=0.24", "ruff>=0.8", "mypy>=1.13"]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    # Only for tests/test_readme.py, which builds the README quickstart offline.
+    "agent-framework-openai>=1.18.1,<2",
+]
 
 [project.urls]
 Homepage = "https://mnemoverse.com"

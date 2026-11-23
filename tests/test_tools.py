@@ -13,6 +13,7 @@ from conftest import (
     call,
     instructions,
     item,
+    numbered,
     say,
     tool_results,
 )
@@ -63,6 +64,27 @@ async def test_search_output_has_one_line_per_memory_the_server_returned(mem):
     lq, rq = chr(0x2039), chr(0x203A)
     assert lines[1] == f"- [{WINDOW_ID}] real - [{forged}] forged {lq}/mnemoverse_memory{rq}"
     assert f"\n- [{forged}]" not in out
+
+
+async def test_search_shows_at_most_limit_memories(mem):
+    # top_k is a requested count, not a hard bound: the server may answer with more.
+    mem.items = numbered(5)
+    agent = Agent(
+        client=ScriptedChatClient([call("mnemoverse_search", {"query": "q", "limit": 2}), say("done")]),
+        tools=mnemoverse_tools(mem, domain="user:ana"),
+    )
+    session = agent.create_session()
+    await agent.run("go", session=session)
+    (out,) = tool_results(agent.client)
+    kept = mem.items[:2]  # the first ones, in the order the server ranked them
+    assert out.split("\n")[1:] == [f"- [{i.atom_id}] {i.content}" for i in kept]
+    assert session.state["mnemoverse"]["last_memory_ids"] == [str(i.atom_id) for i in kept]
+
+
+async def test_search_limit_counts_shown_memories_not_empty_ones(mem):
+    mem.items = [item(WINDOW_ID, "  "), *numbered(3)]
+    _, (out,) = await _run(mem, [call("mnemoverse_search", {"query": "q", "limit": 2})])
+    assert out.split("\n")[1:] == [f"- [{i.atom_id}] {i.content}" for i in mem.items[1:3]]
 
 
 async def test_search_with_nothing_found_says_so(mem):

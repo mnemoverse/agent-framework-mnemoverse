@@ -71,7 +71,7 @@ def mnemoverse_tools(
             return f"Mnemoverse is not available: {exc}."
         except Exception as exc:  # noqa: BLE001 - the tool answers the model with the error
             return describe_error(exc)
-        lines, ids = format_items(list(result.items))
+        lines, ids = format_items(list(result.items), limit)
         remember_ids(session, ids, source_id)
         if not lines:
             return "No memories in the user's Mnemoverse memory matched."

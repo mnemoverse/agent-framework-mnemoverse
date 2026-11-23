@@ -17,6 +17,7 @@ from conftest import (
     ScriptedChatClient,
     instructions,
     item,
+    numbered,
     say,
 )
 from mnemoverse import MnemoAuthError
@@ -231,6 +232,20 @@ async def test_capture_keeps_the_content_limit(mem):
     provider = MnemoverseContextProvider(mem, domain="d", capture=True)
     await Agent(client=ScriptedChatClient(), context_providers=[provider]).run("x" * 12000)
     assert len(mem.named("write")[0]["content"]) == 10000
+
+
+async def test_recall_shows_at_most_top_k_memories(mem):
+    # top_k is a requested count, not a hard bound: the server may answer with more.
+    mem.items = numbered(5)
+    chat = ScriptedChatClient()
+    agent = Agent(client=chat, context_providers=[MnemoverseContextProvider(mem, domain="d", top_k=2)])
+    session = agent.create_session()
+    await agent.run("anything?", session=session)
+    assert mem.named("read")[0]["top_k"] == 2
+    block = instructions(chat).split("<mnemoverse_memory>\n", 1)[1].split("\n</mnemoverse_memory>", 1)[0]
+    kept = mem.items[:2]  # the first ones, in the order the server ranked them
+    assert block.split("\n") == [f"- [{i.atom_id}] {i.content}" for i in kept]
+    assert session.state["mnemoverse"]["last_memory_ids"] == [str(i.atom_id) for i in kept]
 
 
 async def test_recalled_ids_are_kept_in_the_session(mem):

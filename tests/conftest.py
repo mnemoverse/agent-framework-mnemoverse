@@ -36,6 +36,11 @@ def item(atom_id: uuid.UUID, content: str, domain: str = "user:ana") -> MemoryIt
     )
 
 
+def numbered(n: int) -> list[MemoryItem]:
+    """``n`` memories in server order: ``memory 0``, ``memory 1``, ..., each with its own id."""
+    return [item(uuid.UUID(int=i + 1, version=4), f"memory {i}") for i in range(n)]
+
+
 class FakeMnemo:
     """Stands in for ``AsyncMnemoClient``: same method names and keywords, no network."""
 
