@@ -17,6 +17,7 @@ from conftest import (
     ScriptedChatClient,
     instructions,
     item,
+    numbered,
     say,
 )
 from mnemoverse import MnemoAuthError
@@ -233,6 +234,20 @@ async def test_capture_keeps_the_content_limit(mem):
     assert len(mem.named("write")[0]["content"]) == 10000
 
 
+async def test_recall_shows_at_most_top_k_memories(mem):
+    # top_k is a requested count, not a hard bound: the server may answer with more.
+    mem.items = numbered(5)
+    chat = ScriptedChatClient()
+    agent = Agent(client=chat, context_providers=[MnemoverseContextProvider(mem, domain="d", top_k=2)])
+    session = agent.create_session()
+    await agent.run("anything?", session=session)
+    assert mem.named("read")[0]["top_k"] == 2
+    block = instructions(chat).split("<mnemoverse_memory>\n", 1)[1].split("\n</mnemoverse_memory>", 1)[0]
+    kept = mem.items[:2]  # the first ones, in the order the server ranked them
+    assert block.split("\n") == [f"- [{i.atom_id}] {i.content}" for i in kept]
+    assert session.state["mnemoverse"]["last_memory_ids"] == [str(i.atom_id) for i in kept]
+
+
 async def test_recalled_ids_are_kept_in_the_session(mem):
     agent = Agent(client=ScriptedChatClient(), context_providers=[MnemoverseContextProvider(mem, domain="d")])
     session = agent.create_session()
@@ -300,3 +315,9 @@ def test_a_capture_cancelled_by_asyncio_run_is_logged(caplog):
     assert mem.completed == ["read"]
     assert "the capture that ran past its budget was cancelled before it finished" in caplog.text
     assert "while its event loop runs" in caplog.text
+
+
+@pytest.mark.parametrize("bad", [0, -1, 501, None, "3", 2.5, True])
+def test_top_k_outside_1_to_500_is_refused_when_the_provider_is_created(mem, bad):
+    with pytest.raises(ValueError, match="top_k"):
+        MnemoverseContextProvider(mem, domain="d", top_k=bad)
